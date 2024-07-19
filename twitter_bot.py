@@ -1,13 +1,19 @@
 import tweepy
 import time
 import requests
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Replace these with your own credentials
-API_KEY = '2NIs89yoBYrRYdRegx4PSceG3'
-API_SECRET_KEY = 'YByjH5yBoxJyYbjYT8gWZh1HYSlgaHEM5j5vicjhyX3I90NTY6'
-ACCESS_TOKEN = '1813340014383886336-t4H2en8OgL5cWGvcwD764evjZzXSRm'
-ACCESS_TOKEN_SECRET = 'mNyX5fTY5iyotoWGlbHG2FUYdujLM5VJBEnPXfJxwu8PO'
-BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAFeGuwEAAAAA4wIyathNxIVHthjYS4VKfLn9yI8%3D80G9L67SqH3OJjDT7fGEBTfyro0APLMD0PBARANMsAznmhECDX'
+API_KEY = os.getenv('API_KEY')
+API_SECRET_KEY = os.getenv('API_SECRET_KEY')
+ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
+ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
+BEARER_TOKEN = os.getenv('BEARER_TOKEN')
+API_NINJAS_KEY = os.getenv('API_NINJAS_KEY')
 
 # Authenticate to Twitter
 client = tweepy.Client(bearer_token=BEARER_TOKEN, 
@@ -25,7 +31,7 @@ except tweepy.TweepyException as e:
 
 def get_philosophical_quote():
     url = "https://api.api-ninjas.com/v1/quotes?category=inspirational"
-    headers = {'X-Api-Key': 'dQzp8yXeCGkVExsyZn7hGQ==AMBAWBx89bmtr4Ci'}
+    headers = {'X-Api-Key': API_NINJAS_KEY}
     response = requests.get(url, headers=headers)
     print(response.json())
     if response.status_code == 200:
@@ -34,7 +40,6 @@ def get_philosophical_quote():
         author = data[0]['author']
         return f"{quote} - {author}"
     return None
-
 
 def tweet(text):
     try:
