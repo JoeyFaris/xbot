@@ -56,7 +56,7 @@ def main():
             tweet(quote)
         else:
             print("No new quote found at this time")
-        time.sleep(3600)  # Sleep for 1 hour
+        time.sleep(28800)  # Sleep for 1 hour
 
 if __name__ == "__main__":
     main()
