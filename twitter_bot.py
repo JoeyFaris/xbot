@@ -1,8 +1,10 @@
 import tweepy
 import time
+import schedule
 import requests
 from dotenv import load_dotenv
 import os
+from openai import OpenAI
 
 # Load environment variables from .env file
 load_dotenv()
@@ -13,10 +15,12 @@ API_SECRET_KEY = os.getenv('API_SECRET_KEY')
 ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
 ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN')
-API_NINJAS_KEY = os.getenv('API_NINJAS_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+client = OpenAI(api_key=OPENAI_API_KEY)  # Import OpenAI
 
 # Authenticate to Twitter
-client = tweepy.Client(bearer_token=BEARER_TOKEN, 
+user = tweepy.Client(bearer_token=BEARER_TOKEN, 
                        consumer_key=API_KEY, 
                        consumer_secret=API_SECRET_KEY, 
                        access_token=ACCESS_TOKEN, 
@@ -24,39 +28,56 @@ client = tweepy.Client(bearer_token=BEARER_TOKEN,
 
 # Verify the authentication
 try:
-    client.get_me()
+    user.get_me()
     print("Authentication OK")
 except tweepy.TweepyException as e:
     print("Error during authentication:", e)
 
-def get_philosophical_quote():
-    url = "https://api.api-ninjas.com/v1/quotes?category=inspirational"
-    headers = {'X-Api-Key': API_NINJAS_KEY}
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        quote = data[0]['quote']
-        author = data[0]['author']
-        return f"{quote} - {author}"
-    else:
-        print(f"Failed to get quote: {response.status_code}, {response.text}")
-    return None
+# Function to generate a tweet
+def generate_tweet():
+    prompt = "Share an engaging and recent fact or piece of news about software engineering or computer science. Make it Twitter-friendly: fluent, concise, and include a relevant link if possible."
+    print(prompt)
+    
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",  
+        messages=[
+            {"role": "system", "content": "You are an expert in software engineering and computer science. Create engaging and Twitter-friendly content."},
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=100,  # Adjust token limit to fit within character limits
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+    
+    print("OpenAI Response:", response)  # Debugging output
+    
+    # Correctly accessing the content
+    message_content = response.choices[0].message.content
+    print("Message Content:", message_content)
+    tweet = message_content.strip() if message_content else "Error: No response content"
 
-def tweet(text):
+    # Ensure tweet length is within the 280 character limit
+    if len(tweet) > 280:
+        tweet = tweet[:277] + '...'  # Trim and add ellipsis if necessary
+    
+    return tweet
+
+# Function to tweet the generated content
+def tweet_fact():
+    tweet = generate_tweet()
+    print(tweet)
     try:
-        client.create_tweet(text=text)
-        print("Tweeted successfully:", text)
-    except tweepy.TweepyException as e:
-        print("Error tweeting:", e)
+        # Posting the tweet using the correct method
+        user.create_tweet(text=tweet)
+        print(f"Tweeted: {tweet}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
-def main():
-    while True:
-        quote = get_philosophical_quote()
-        if quote:
-            tweet(quote)
-        else:
-            print("No new quote found at this time")
-        time.sleep(28800)  # Sleep for 1 hour
+# Schedule the tweet_fact function to run once every 12 hours
+schedule.every(12).hours.do(tweet_fact)
 
-if __name__ == "__main__":
-    main()
+# Run the scheduler
+while True:
+    schedule.run_pending()
+    time.sleep(1)
