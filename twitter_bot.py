@@ -32,11 +32,19 @@ except tweepy.TweepyException as e:
 def generate_tweet():
     #prompt = "Share an interesting or niche piece of news about software engineering or computer science and include a link where you got that information. Please include the URL at the very end of the response. Do not start it with `Did you know?` Also make it within 280 characters"
     prompt = """
-    Share an interesting or niche piece of news about software engineering or computer science. 
-    Make it Twitter-friendly: fluent, concise, and include a **real, valid link** to a relevant article or source. 
-    Ensure the link is complete and accurate. 
-    If you cannot provide a valid URL, do not mention a link in the tweet.
-    Do not start it with `Did you know?`
+    Share a fascinating, recent development or insight in software engineering or computer science. 
+    Your tweet should be:
+    1. Engaging and thought-provoking
+    2. Concise and Twitter-friendly (max 280 characters)
+    3. Include a brief explanation of why it's significant
+    5. Use hashtags sparingly and relevantly (max 2)
+    
+    Avoid:
+    - Starting with phrases like "Did you know?" or "Interesting fact:"
+    - Using clickbait language
+    - Mentioning a link if you can't provide a valid URL
+    
+    Format: [Insight/News] [Brief explanation] [Significance] [Link] [Hashtags]
     """
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",  
@@ -58,6 +66,9 @@ def generate_tweet():
     if tweet.startswith('"') and tweet.endswith('"'):
         tweet = tweet[1:]
         tweet = tweet[:-1]
+    
+    if tweet.startswith('[Insight]'):
+        tweet = tweet[10:]
 
     if len(tweet) > 280:
         tweet = tweet[:277] + '...'  
