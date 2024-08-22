@@ -86,7 +86,7 @@ def tweet_fact():
 
 tweet_fact()
 
-schedule.every(1).hours.do(tweet_fact)
+schedule.every(8).hours.do(tweet_fact)
 
 
 # Run the scheduler
