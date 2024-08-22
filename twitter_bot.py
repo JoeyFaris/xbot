@@ -30,7 +30,6 @@ except tweepy.TweepyException as e:
     print("Error during authentication:", e)
 
 def generate_tweet():
-    #prompt = "Share an interesting or niche piece of news about software engineering or computer science and include a link where you got that information. Please include the URL at the very end of the response. Do not start it with `Did you know?` Also make it within 280 characters"
     prompt = """
     Share a fascinating, recent development or insight in software engineering or computer science. 
     Your tweet should be:
@@ -63,8 +62,9 @@ def generate_tweet():
 
     print(tweet)
 
-    if tweet.startswith('"') and tweet.endswith('"'):
+    if tweet.startswith('"'):
         tweet = tweet[1:]
+    if tweet.endswith('"'):
         tweet = tweet[:-1]
     
     if tweet.startswith('[Insight]'):
@@ -86,7 +86,7 @@ def tweet_fact():
 
 tweet_fact()
 
-schedule.every(8).hours.do(tweet_fact)
+schedule.every(1).hours.do(tweet_fact)
 
 
 # Run the scheduler
