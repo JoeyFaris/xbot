@@ -4,7 +4,7 @@ import schedule
 import requests
 from dotenv import load_dotenv
 import os
-from openai import OpenAI
+import anthropic
 
 load_dotenv()
 
@@ -14,8 +14,9 @@ ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
 ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 
-client = OpenAI(api_key=OPENAI_API_KEY)  
+anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 user = tweepy.Client(bearer_token=BEARER_TOKEN, 
                        consumer_key=API_KEY, 
@@ -31,61 +32,34 @@ except tweepy.TweepyException as e:
 
 def generate_tweet():
     prompt = """
-    Share a fascinating, recent development or insight in software engineering or computer science. 
-    Your tweet should be:
-    1. Engaging and thought-provoking
-    2. Concise and Twitter-friendly (max 280 characters)
-    3. Include a brief explanation of why it's significant
-    5. Use hashtags sparingly and relevantly (max 2)
+    Create a tweet that would go viral among young tech people on Twitter. It should be:
+    1. Hilarious and borderline shitpost-y
+    2. Related to software engineering, coding, or tech culture
+    3. Max 280 characters, including emojis
+    4. Potentially include a relatable coding struggle, tech joke, or industry satire, or curses and insults
     
     Avoid:
-    - Starting with phrases like "Did you know?" or "Interesting fact:"
-    - Using clickbait language
-    - Mentioning a link if you can't provide a valid URL
+    - Being too formal or professional
+    - Using outdated references or memes
     
-    Format: [Insight/News] [Brief explanation] [Significance] [Link] [Hashtags]
+    Format: [Meme/Joke/Observation] [Punchline/Twist] [Emojis]
     """
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",  
+    response = anthropic_client.messages.create(
+        model="claude-3-sonnet-20240229",
+        max_tokens=100,
+        temperature=0.9,
+        system="You're a witty, sarcastic dev who's always up on the latest tech memes and Twitter trends.",
         messages=[
-            {"role": "system", "content": "You are an expert in software engineering and computer science. Create engaging and Twitter-friendly content."},
-            {"role": "user", "content": prompt},
-        ],
-        max_tokens=100, 
-        n=1,
-        stop=None,
-        temperature=0.7,
+            {"role": "user", "content": prompt}
+        ]
     )
     
-    message_content = response.choices[0].message.content
-    tweet = message_content.strip() if message_content else "Error: No response content"
-
-    print(tweet)
-
-    if tweet.startswith('"'):
-        tweet = tweet[1:]
-    if tweet.endswith('"'):
-        tweet = tweet[:-1]
+    tweet = response.content[0].text.strip()
     
-    if tweet.startswith('[Insight]'):
-        tweet = tweet[10:]
-
+    tweet = tweet.strip('"')
+    
     if len(tweet) > 280:
-        last_space = tweet[:280].rfind(' ')
-        if last_space == -1:  
-            first_tweet = tweet[:280]
-            second_tweet = tweet[280:]
-        else:
-            first_tweet = tweet[:last_space]
-            second_tweet = tweet[last_space+1:]
-        
-        response = user.create_tweet(text=first_tweet)
-        print(f"First tweet posted: {first_tweet}")
-        
-        user.create_tweet(text=second_tweet, in_reply_to_tweet_id=response.data['id'])
-        print(f"Second tweet posted as reply: {second_tweet}")
-        
-        tweet = first_tweet 
+        tweet = tweet[:277] + '...'
     
     return tweet
 
