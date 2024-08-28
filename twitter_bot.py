@@ -71,7 +71,21 @@ def generate_tweet():
         tweet = tweet[10:]
 
     if len(tweet) > 280:
-        tweet = tweet[:277] + '...'  
+        last_space = tweet[:280].rfind(' ')
+        if last_space == -1:  
+            first_tweet = tweet[:280]
+            second_tweet = tweet[280:]
+        else:
+            first_tweet = tweet[:last_space]
+            second_tweet = tweet[last_space+1:]
+        
+        response = user.create_tweet(text=first_tweet)
+        print(f"First tweet posted: {first_tweet}")
+        
+        user.create_tweet(text=second_tweet, in_reply_to_tweet_id=response.data['id'])
+        print(f"Second tweet posted as reply: {second_tweet}")
+        
+        tweet = first_tweet 
     
     return tweet
 
@@ -89,7 +103,6 @@ tweet_fact()
 schedule.every(8).hours.do(tweet_fact)
 
 
-# Run the scheduler
 while True:
     schedule.run_pending()
     time.sleep(1)
