@@ -31,6 +31,8 @@ try:
 except tweepy.TweepyException as e:
     print("Error during authentication:", e)
 
+print(f"Anthropic version: {anthropic.__version__}")
+
 def generate_tweet():
     topics = ["software engineering", "AI", "Machine Learning", "Neural networks", "computer science"]
     chosen_topic = random.choice(topics)
