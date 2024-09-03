@@ -31,3 +31,5 @@ Thumbs.db
 
 # Jupyter Notebook
 .ipynb_checkpoints.env
+.env
+.env
