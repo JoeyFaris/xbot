@@ -33,3 +33,4 @@ Thumbs.db
 .ipynb_checkpoints.env
 .env
 .env
+.env.backup
