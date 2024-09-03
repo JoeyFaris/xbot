@@ -5,6 +5,7 @@ import requests
 from dotenv import load_dotenv
 import os
 import anthropic
+import random  # Add this import
 
 load_dotenv()
 
@@ -31,18 +32,24 @@ except tweepy.TweepyException as e:
     print("Error during authentication:", e)
 
 def generate_tweet():
-    prompt = """
-    Create a tweet that would go viral among young tech people on Twitter. It should be:
-    1. Hilarious and borderline shitpost-y
-    2. Related to software engineering, coding, or tech culture
-    3. Max 280 characters, including emojis
-    4. Potentially include a relatable coding struggle, tech joke, or industry satire, or curses and insults
+    topics = ["software engineering", "AI", "Machine Learning", "Neural networks", "computer science"]
+    chosen_topic = random.choice(topics)
+    
+    prompt = f"""
+    Create an informative tweet about recent news or developments in {chosen_topic}. The tweet should:
+    1. Be factual and based on current events or recent advancements
+    2. Be engaging and interesting to tech-savvy Twitter users
+    3. Max 280 characters, including any relevant hashtags
+    4. Provide a brief insight, statistic, or implication of the news
+    5. Include a relevant and reputable link to the source of the information, if available
     
     Avoid:
-    - Being too formal or professional
-    - Using outdated references or memes
+    - Speculation or unverified information
+    - Overly technical jargon that might confuse general audience
     
-    Format: [Meme/Joke/Observation] [Punchline/Twist] [Emojis]
+    Format: [Brief news headline] [Key point or implication] [Relevant link if available] [Relevant hashtag]
+    
+    Note: If no relevant link is available, omit it from the tweet.
     """
     response = anthropic_client.messages.create(
         model="claude-3-sonnet-20240229",
@@ -74,7 +81,7 @@ def tweet_fact():
 
 tweet_fact()
 
-schedule.every(8).hours.do(tweet_fact)
+schedule.every(4).hours.do(tweet_fact)
 
 
 while True:
