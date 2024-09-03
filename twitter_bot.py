@@ -45,7 +45,6 @@ def generate_tweet():
     
     Avoid:
     - Speculation or unverified information
-    - Overly technical jargon that might confuse general audience
     
     Format: [Brief news headline] [Key point or implication] [Relevant link if available] [Relevant hashtag]
     
@@ -55,18 +54,24 @@ def generate_tweet():
         model="claude-3-sonnet-20240229",
         max_tokens=100,
         temperature=0.9,
-        system="You're a witty, sarcastic dev who's always up on the latest tech memes and Twitter trends.",
+        system="You're a user trying to go viral on Twitter. Respond with a tweet that has a chance to go viral.",
         messages=[
-            {"role": "user", "content": prompt}
-        ]
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": f"{prompt}"
+                }
+            ]
+        }
+    ]
     )
     
-    tweet = response.content[0].text.strip()
-    
-    tweet = tweet.strip('"')
+    tweet = response.content[0].text if isinstance(response.content, list) else response.content
     
     if len(tweet) > 280:
-        tweet = tweet[:277] + '...'
+        tweet = tweet[:280].rsplit(' ', 1)[0]
     
     return tweet
 
