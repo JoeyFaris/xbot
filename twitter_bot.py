@@ -5,7 +5,7 @@ import requests
 from dotenv import load_dotenv
 import os
 import anthropic
-import random  # Add this import
+import random
 
 load_dotenv()
 
@@ -88,8 +88,7 @@ def tweet_fact():
 
 tweet_fact()
 
-schedule.every(8).hours.do(tweet_fact)
-
+schedule.every().day.at("12:00").do(tweet_fact)
 
 while True:
     schedule.run_pending()
