@@ -21,7 +21,6 @@ ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 
 anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-# Update the client initialization to use OAuth 2.0 authentication
 user = tweepy.Client(
     bearer_token=BEARER_TOKEN,
     consumer_key=API_KEY,
@@ -39,7 +38,6 @@ except tweepy.TweepyException as e:
 
 print(f"Anthropic version: {anthropic.__version__}")
 
-# File to store previous tweets
 TWEET_HISTORY_FILE = 'tweet_history.json'
 
 def load_tweet_history():
@@ -59,11 +57,9 @@ def generate_tweet():
     
     tweet_history = load_tweet_history()
     
-    # Remove tweets older than 30 days
     cutoff_date = datetime.now() - timedelta(days=30)
     tweet_history = [tweet for tweet in tweet_history if datetime.fromisoformat(tweet['date']) > cutoff_date]
     
-    # Get topics not used in the last 7 days
     recent_topics = set(tweet['topic'] for tweet in tweet_history[-7:])
     available_topics = [topic for topic in topics if topic not in recent_topics]
     
@@ -112,7 +108,6 @@ def generate_tweet():
     if len(tweet) > 280:
         tweet = tweet[:280].rsplit(' ', 1)[0]
     
-    # Save the new tweet to history
     tweet_history.append({
         'date': datetime.now().isoformat(),
         'topic': chosen_topic,
@@ -133,13 +128,11 @@ def tweet_fact():
 
 def respond_to_tweet():
     try:
-        # Get the most recent tweet mentioning the user
         me = user.get_me()
         mentions = user.get_users_mentions(id=me.data.id, max_results=5)
         if mentions.data:
             latest_mention = mentions.data[0]
             
-            # Generate a response
             prompt = f"""
             Create a brief, friendly response to this tweet: "{latest_mention.text}"
             The response should:
@@ -171,22 +164,18 @@ def respond_to_tweet():
             if len(reply) > 280:
                 reply = reply[:280].rsplit(' ', 1)[0]
             
-            # Post the reply
             user.create_tweet(text=reply, in_reply_to_tweet_id=latest_mention.id)
             print(f"Replied to tweet: {reply}")
     except Exception as e:
         print(f"An error occurred while responding to tweet: {e}")
 
-# Test authentication and permissions
 try:
     me = user.get_me()
     print(f"Authenticated as: {me.data.username}")
     
-    # Test tweet creation
     test_tweet = user.create_tweet(text="This is a test tweet. It will be deleted shortly.")
     print("Test tweet created successfully")
     
-    # Delete the test tweet
     user.delete_tweet(test_tweet.data['id'])
     print("Test tweet deleted successfully")
     
@@ -195,12 +184,7 @@ except tweepy.TweepyException as e:
     if "403 Forbidden" in str(e):
         print("It seems your app doesn't have the necessary permissions. Please check your Twitter Developer Portal and ensure your app has Read and Write permissions.")
 
-# Comment out the immediate function calls for testing
-#respond_to_tweet()
-# tweet_fact()
-
 schedule.every().day.at("12:00").do(tweet_fact)
-#schedule.every().day.at("18:00").do(respond_to_tweet)
 
 while True:
     schedule.run_pending()
