@@ -69,21 +69,58 @@ def generate_tweet():
     chosen_topic = random.choice(available_topics)
     
     prompt = f"""
-    Create a simple, factual tweet about {chosen_topic}. The tweet should:
-    1. Be a straightforward news update or fact
-    2. Be based on current developments in the field
-    3. Max 280 characters
-    4. Use clear, concise language
-    5. Avoid technical jargon where possible
-    6. Include a relevant and working link to a reputable source if possible
-    
+    Create a concise, informative tweet about {chosen_topic}. The tweet must adhere to the following guidelines:
+
+    Content:
+    1. Present a straightforward news update, fact, or recent development in the field
+    2. Ensure the information is current and relevant (within the last week if possible)
+    3. Strictly adhere to the 280-character limit, including any links
+    4. Use clear, accessible language suitable for a general audience
+    5. If technical terms are necessary, briefly explain them
+    6. Include a relevant, working link to a reputable source (e.g., academic journals, established tech news sites, official company announcements)
+
+    Style and Tone:
+    7. Maintain a professional, neutral tone
+    8. Use active voice for clarity and impact
+    9. Begin with a strong, attention-grabbing opening sentence
+    10. End with a thought-provoking statement or call-to-action when appropriate
+
+    Structure:
+    11. If including statistics, round to the nearest whole number for readability
+    12. Use abbreviations sparingly and only if widely recognized
+    13. Incorporate hashtags judiciously (1-2 maximum) if they add value
+
+    Engagement:
+    14. Frame the information in a way that encourages further exploration of the topic
+    15. If applicable, mention potential implications or future developments
+
     Avoid:
-    - Attempts at humor or wit
-    - Pop culture references or memes
-    - Overly complex explanations
+    - Any form of humor, sarcasm, or attempts at wit
+    - Pop culture references, memes, or trendy language
+    - Overly complex or technical explanations
+    - Speculation or unverified information
+    - Controversial or polarizing statements
     - Content similar to these recent tweets: {[tweet['content'] for tweet in tweet_history[-5:]]}
-    
-    Format: Write as if you're a tech news outlet sharing a brief update. If you include a link, make sure it's a real, working link to a reputable source.
+
+    Fact-Checking:
+    16. Double-check all facts and figures for accuracy
+    17. Ensure any mentioned organizations, individuals, or events are correctly named and contextualized
+
+    Formatting:
+    18. Use proper capitalization and punctuation
+    19. If including numbers, use numerals for clarity (e.g., "5" instead of "five")
+    20. If the tweet includes a link, ensure it's positioned effectively within the text
+
+    Ethics and Compliance:
+    21. Respect copyright and intellectual property rights
+    22. Adhere to Twitter's content policies and community guidelines
+    23. Maintain objectivity and avoid bias in reporting
+
+    Final Check:
+    24. Proofread for spelling and grammar errors
+    25. Verify that the tweet provides value to the audience and contributes meaningfully to the discourse on {chosen_topic}
+
+    Format: Compose the tweet as if you're a reputable tech news outlet sharing a concise, informative update. Ensure any included link is real, working, and directs to a trustworthy source.
     """
     response = anthropic_client.messages.create(
         model="claude-3-sonnet-20240229",
