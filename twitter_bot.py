@@ -209,13 +209,6 @@ def respond_to_tweet():
 try:
     me = user.get_me()
     print(f"Authenticated as: {me.data.username}")
-    
-    test_tweet = user.create_tweet(text="This is a test tweet. It will be deleted shortly.")
-    print("Test tweet created successfully")
-    
-    user.delete_tweet(test_tweet.data['id'])
-    print("Test tweet deleted successfully")
-    
 except tweepy.TweepyException as e:
     print(f"Error during API test: {e}")
     if "403 Forbidden" in str(e):
