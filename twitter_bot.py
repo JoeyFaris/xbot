@@ -281,7 +281,6 @@ except tweepy.TweepyException as e:
         print("It seems your app doesn't have the necessary permissions. Please check your Twitter Developer Portal and ensure your app has Read and Write permissions.")
 
 schedule.every().day.at("12:00").do(tweet_fact)
-tweet_fact()
 
 while True:
     schedule.run_pending()
