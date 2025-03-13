@@ -8,6 +8,9 @@ import anthropic
 import random
 import json
 from datetime import datetime, timedelta
+import yfinance as yf
+from alpha_vantage.timeseries import TimeSeries
+import feedparser
 
 load_dotenv()
 
@@ -16,10 +19,11 @@ API_SECRET_KEY = os.getenv('API_SECRET_KEY')
 ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
 ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN')
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+ALPHA_VANTAGE_KEY = os.getenv('ALPHA_VANTAGE_KEY')
 
 anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+ts = TimeSeries(key=ALPHA_VANTAGE_KEY, output_format='pandas')
 
 user = tweepy.Client(
     bearer_token=BEARER_TOKEN,
@@ -50,90 +54,147 @@ def save_tweet_history(history):
     with open(TWEET_HISTORY_FILE, 'w') as f:
         json.dump(history, f)
 
+def get_market_data():
+    # List of popular tickers to track
+    tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'SPY', 'JPM', 'V', 'MA', 'DIS', 'NFLX', 'PYPL', 'CRM', 'ADBE', 'COST', 'WMT', 'PEP', 'KO', 'BAC', 'XOM', 'CVX']
+    market_data = {}
+    
+    for ticker in tickers:
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            market_data[ticker] = {
+                'price': info.get('regularMarketPrice'),
+                'volume': info.get('volume'),
+                'previous_close': info.get('previousClose')
+            }
+        except Exception as e:
+            print(f"Error fetching data for {ticker}: {e}")
+            
+    return market_data
+
+def get_economic_news():
+    # RSS feeds for economic news
+    feeds = [
+        'https://www.cnbc.com/id/10001147/device/rss/rss.html',  # CNBC Economy News
+        'https://www.economist.com/finance-and-economics/rss.xml',  # The Economist
+        'https://www.bloomberg.com/feeds/economics.rss'  # Bloomberg Economics
+    ]
+    
+    news_items = []
+    for feed_url in feeds:
+        try:
+            feed = feedparser.parse(feed_url)
+            news_items.extend(feed.entries[:5])  # Get latest 5 stories from each feed
+        except Exception as e:
+            print(f"Error fetching news feed {feed_url}: {e}")
+    
+    return news_items
+
 def generate_tweet():
-    topics = ["software engineering", "AI", "Machine Learning", "Neural networks", "computer science", 
-              "blockchain", "cybersecurity", "quantum computing", "robotics", "IoT", "5G", "edge computing", 
-              "augmented reality", "virtual reality", "data science", "cloud computing"]
-    
     tweet_history = load_tweet_history()
+    last_tweet = tweet_history[-1] if tweet_history else None
     
-    cutoff_date = datetime.now() - timedelta(days=30)
-    tweet_history = [tweet for tweet in tweet_history if datetime.fromisoformat(tweet['date']) > cutoff_date]
+    content_types = ["market_data", "economic_news"]
+    chosen_content = random.choice(content_types)
     
-    recent_topics = set(tweet['topic'] for tweet in tweet_history[-7:])
-    available_topics = [topic for topic in topics if topic not in recent_topics]
+    if chosen_content == "market_data":
+        market_data = get_market_data()
+        tweet_types = [
+            "unusual_volume",
+            "price_movement",
+            "market_insight",
+            "trend_analysis", 
+            "sector_performance",
+            "earnings_updates",
+            "dividend_news",
+            "market_sentiment",
+            "industry_trends",
+            "market_leadership"
+        ]
+        
+        chosen_type = random.choice(tweet_types)
+        
+        # Avoid tweeting about the same stock as the last tweet
+        last_ticker = None
+        if last_tweet and 'content' in last_tweet:
+            for ticker in market_data.keys():
+                if f"${ticker}" in last_tweet['content']:
+                    last_ticker = ticker
+                    break
+        
+        prompt = f"""
+        Generate an engaging financial market tweet based on this real-time data: {market_data}
+        
+        Tweet Type: {chosen_type}
+        
+        Additional Context:
+        Last mentioned ticker: {last_ticker} (please avoid mentioning this ticker)
+        
+        Key Requirements:
+        1. Be attention-grabbing and informative
+        2. Include relevant $TICKER symbols (but not {last_ticker})
+        3. Use emojis strategically (1-2 max)
+        4. Add intrigue without speculation
+        5. Include percentage changes or notable numbers
+        6. Keep under 280 characters
+        7. Use a confident, authoritative tone
+        8. Include relevant hashtags like #FinTwit #Trading
+        
+        Style Guide:
+        - Write like a market insider sharing exclusive insights
+        - Create urgency without being alarmist
+        - Use phrases like "Unusual activity" "Breaking" "Alert" strategically
+        - End with an engaging hook or thought-provoking observation
+        
+        Avoid:
+        - Direct investment advice
+        - Speculative predictions
+        - Overly technical jargon
+        - Political commentary
+        """
+    else:
+        news_items = get_economic_news()
+        recent_news = random.choice(news_items) if news_items else None
+        
+        prompt = f"""
+        Generate an engaging tweet about economic news or trends.
+        
+        Latest Economic News: {recent_news.title if recent_news else 'Focus on general economic trends'}
+        
+        Key Requirements:
+        1. Be informative and insightful
+        2. Include relevant economic indicators or statistics if applicable
+        3. Use emojis strategically (1-2 max)
+        4. Keep under 280 characters
+        5. Use a confident, authoritative tone
+        6. Include relevant hashtags like #Economy #Markets #GlobalTrade
+        
+        Style Guide:
+        - Focus on macro trends and economic impacts
+        - Highlight key economic indicators
+        - Connect news to market implications
+        - End with thought-provoking observation
+        
+        Avoid:
+        - Political bias
+        - Alarmist language
+        - Overly technical terms
+        - Speculative predictions
+        """
     
-    if not available_topics:
-        available_topics = topics
-    
-    chosen_topic = random.choice(available_topics)
-    
-    prompt = f"""
-    Create a concise, informative tweet about {chosen_topic}. The tweet must adhere to the following guidelines:
-
-    Content:
-    1. Present a straightforward news update, fact, or recent development in the field
-    2. Ensure the information is current and relevant (within the last week if possible)
-    3. Strictly adhere to the 280-character limit, including any links
-    4. Use clear, accessible language suitable for a general audience
-    5. If technical terms are necessary, briefly explain them
-    6. Include a relevant, working link to a reputable source (e.g., academic journals, established tech news sites, official company announcements)
-
-    Style and Tone:
-    7. Maintain a professional, neutral tone
-    8. Use active voice for clarity and impact
-    9. Begin with a strong, attention-grabbing opening sentence
-    10. End with a thought-provoking statement or call-to-action when appropriate
-
-    Structure:
-    11. If including statistics, round to the nearest whole number for readability
-    12. Use abbreviations sparingly and only if widely recognized
-    13. Incorporate hashtags judiciously (1-2 maximum) if they add value
-
-    Engagement:
-    14. Frame the information in a way that encourages further exploration of the topic
-    15. If applicable, mention potential implications or future developments
-
-    Avoid:
-    - Any form of humor, sarcasm, or attempts at wit
-    - Pop culture references, memes, or trendy language
-    - Overly complex or technical explanations
-    - Speculation or unverified information
-    - Controversial or polarizing statements
-    - Content similar to these recent tweets: {[tweet['content'] for tweet in tweet_history[-5:]]}
-
-    Fact-Checking:
-    16. Double-check all facts and figures for accuracy
-    17. Ensure any mentioned organizations, individuals, or events are correctly named and contextualized
-
-    Formatting:
-    18. Use proper capitalization and punctuation
-    19. If including numbers, use numerals for clarity (e.g., "5" instead of "five")
-    20. If the tweet includes a link, ensure it's positioned effectively within the text
-
-    Ethics and Compliance:
-    21. Respect copyright and intellectual property rights
-    22. Adhere to Twitter's content policies and community guidelines
-    23. Maintain objectivity and avoid bias in reporting
-
-    Final Check:
-    24. Proofread for spelling and grammar errors
-    25. Verify that the tweet provides value to the audience and contributes meaningfully to the discourse on {chosen_topic}
-
-    Format: Compose the tweet as if you're a reputable tech news outlet sharing a concise, informative update. Ensure any included link is real, working, and directs to a trustworthy source.
-    """
     response = anthropic_client.messages.create(
         model="claude-3-sonnet-20240229",
         max_tokens=100,
-        temperature=0.7,
-        system="You're a tech news outlet that shares brief, factual updates about technology topics. Include relevant and working links when possible.",
+        temperature=0.8,
+        system="You're a savvy market analyst known for spotting unusual market patterns and sharing compelling insights. Your tweets regularly go viral due to their timely, accurate, and engaging nature.",
         messages=[
         {
             "role": "user",
             "content": [
                 {
                     "type": "text",
-                    "text": f"{prompt}"
+                    "text": prompt
                 }
             ]
         }
@@ -145,9 +206,10 @@ def generate_tweet():
     if len(tweet) > 280:
         tweet = tweet[:280].rsplit(' ', 1)[0]
     
+    tweet_history = load_tweet_history()
     tweet_history.append({
         'date': datetime.now().isoformat(),
-        'topic': chosen_topic,
+        'type': chosen_content,
         'content': tweet
     })
     save_tweet_history(tweet_history)
@@ -171,18 +233,22 @@ def respond_to_tweet():
             latest_mention = mentions.data[0]
             
             prompt = f"""
-            Create a brief, friendly response to this tweet: "{latest_mention.text}"
-            The response should:
-            1. Be relevant to the mention
-            2. Be polite and professional
-            3. Max 280 characters
-            4. Avoid controversial topics
+            Create an engaging response to this tweet: "{latest_mention.text}"
+            
+            Guidelines:
+            1. Show market expertise while being approachable
+            2. Add value through insights or context
+            3. Use relevant $TICKER symbols if applicable
+            4. Keep it under 280 characters
+            5. Maintain professional yet friendly tone
+            6. Include an emoji if appropriate
             """
+            
             response = anthropic_client.messages.create(
                 model="claude-3-sonnet-20240229",
                 max_tokens=100,
                 temperature=0.7,
-                system="You're a friendly tech news outlet responding to mentions on Twitter. Keep responses brief, relevant, and professional.",
+                system="You're a market analyst engaging with your audience. Be helpful and insightful while maintaining credibility.",
                 messages=[
                 {
                     "role": "user",
@@ -215,6 +281,7 @@ except tweepy.TweepyException as e:
         print("It seems your app doesn't have the necessary permissions. Please check your Twitter Developer Portal and ensure your app has Read and Write permissions.")
 
 schedule.every().day.at("12:00").do(tweet_fact)
+tweet_fact()
 
 while True:
     schedule.run_pending()
