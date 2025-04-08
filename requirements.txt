@@ -9,4 +9,8 @@ tweepy==4.14.0
 urllib3==2.2.2
 schedule==1.2.0
 openai==1.3.5
-anthropic==0.34.1
+anthropic>=0.18.1
+yfinance==0.2.36
+alpha_vantage==2.3.1
+feedparser==6.0.11
+pytz==2024.1
